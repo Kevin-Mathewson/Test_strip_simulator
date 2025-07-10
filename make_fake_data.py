@@ -1,19 +1,12 @@
 # simulate a strip: sort of
-# invert X to be 255 minus the intensity
-# use pandas to output labeled RGB data (or do it ourselves)
+# invert X to be 255 minus the intensity DONE
+# use pandas to output labeled RGB data
 # HCA
+# Github push
+# PCA with 3D ellipses
 
 # Next: 15 classes strip
 
-# start revamping slides for AAC
-# some ideas for members:
-# - Kulkarni
-# - Haehn
-# - Dahl
-# - Yelleswarapu
-# - Jarrett
-# - Dowling
-# - Celli
 
 
 # cooperativity?
@@ -29,6 +22,8 @@ import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+from scipy.stats import chi2
 
 ################################################################################
 
@@ -181,10 +176,10 @@ def spot_color(
         add_noise: bool,
         ) -> pd.Series:
     '''Generate combined color channel data for all sandwiches at a spot'''
-    color = pd.Series([0.0]*len(color_channels), index = color_channels, dtype = float,)
+    color = pd.Series([255.0]*len(color_channels), index = color_channels, dtype = float,)
     if add_noise: affins = add_noise_to_affins(antigen, affins, noise_scaling_spot)
     for probe in immunoprobes: 
-        color += sandwich_color(antigen, test_line, probe, affins, add_noise)
+        color -= sandwich_color(antigen, test_line, probe, affins, add_noise)
     return color
 
 def strip_colors(antigen: str, add_noise: bool) -> pd.DataFrame:
@@ -250,11 +245,7 @@ print(76.5597/65.6226)
 # ChatGPT code: Generate and visualize data
 # ========================================
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
-from scipy.stats import chi2
-from sklearn.decomposition import PCA
+
 
 # Store flattened data and labels
 all_data = []
@@ -362,11 +353,7 @@ plt.show()
 # Generate a simulated image of a strip 
 # ========================================
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
-from scipy.stats import chi2
-from sklearn.decomposition import PCA
+
 
 # Store flattened data and labels
 all_data = []
