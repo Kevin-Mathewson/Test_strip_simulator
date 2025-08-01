@@ -1,12 +1,12 @@
 # simulate a strip: sort of
 # invert X to be 255 minus the intensity DONE
-# use pandas to output labeled RGB data
-# HCA
-# Github push
-# PCA with 3D ellipses
+# use pandas to output labeled RGB data DONE
+# Github push DONE
+# HCA DONE
+# 1. ASCII text for headers (KIM: ask Mark)
+# 2. PCA with 3D ellipses: Think about this for next time
 
-# Next: 15 classes strip
-
+# 3. Then: 15 classes strip
 
 
 # cooperativity?
@@ -197,9 +197,9 @@ def strip_colors(antigen: str, add_noise: bool) -> pd.DataFrame:
 # Generate the cluster mean or "ideal value" for each antigen
 # ===========================================================
 
-cluster_means = {
-    antigen: strip_colors(antigen, False) 
-    for antigen in antigens}
+#cluster_means = {
+#    antigen: strip_colors(antigen, False) 
+#    for antigen in antigens}
 
 ################################################################################
 
@@ -228,8 +228,8 @@ print(81.0173/69.4434)
 print(87.1479/74.6982)
 print(76.5597/65.6226)
 
-
-
+# defining which antigens in the antigen list are actually in use (currently, all of them)
+antigens_in_use = tuple(list(antigens))
 
 
 
@@ -253,7 +253,7 @@ all_labels = []
 
 n_samples = 100
 
-for antigen in antigens:
+for antigen in antigens_in_use:
     for _ in range(n_samples):
         strip = strip_colors(antigen, add_noise=True)
         all_data.append(strip)
@@ -315,7 +315,7 @@ def plot_confidence_ellipse(data, ax, edgecolor='black'):
 # Plotting
 fig, ax = plt.subplots(figsize=(8, 6))
 
-for antigen in antigens:
+for antigen in antigens_in_use:
     indices = [i for i, label in enumerate(all_labels) if label == antigen]
     cluster_data = X_pca[indices]
     ax.scatter(
@@ -336,6 +336,20 @@ ax.legend()
 ax.grid(True)
 plt.tight_layout()
 plt.show()
+
+
+
+
+
+
+#############
+
+
+
+
+
+
+
 
 
 
@@ -361,7 +375,7 @@ all_labels = []
 
 n_samples = 1
 
-for antigen in antigens:
+for antigen in antigens_in_use:
     for _ in range(n_samples):
         strip = strip_colors(antigen, add_noise=False)
         all_data.append(strip)
@@ -373,6 +387,72 @@ for strip in all_data:
     D001_rgb = strip.loc["D001", ["R", "G", "B"]].values
     R007_rgb = strip.loc["R007", ["R", "G", "B"]].values
     X.append(np.concatenate([D001_rgb, R007_rgb]))
-X = np.array(X)
+#X = np.array(X)
+
+
+column_names = []
+for test_line in test_lines:
+    column_names.append(f"R_{test_line}")
+    column_names.append(f"G_{test_line}")
+    column_names.append(f"B_{test_line}")
+
+
+#column_names= ("R_D001", "G_D001", "B_D001", "R_R007" ,"G_R007","B_R007" )
+#row_names_classes = ("Control", "alpha", "BA.5", "BA.1")
+
+
+X = pd.DataFrame(
+    X, 
+    index = antigens_in_use, 
+    columns = column_names,)
 
 print(X)
+
+######################$
+
+
+
+# ... (your existing code for generating X and all_labels) ...
+
+################################################################################
+# New HCA code block: from GEMINI
+################################################################################
+
+import scipy.cluster.hierarchy as sch
+
+# Perform hierarchical clustering on the same 6D data (X)
+# We use the 'ward' method, which is good for minimizing the variance
+# within each cluster, and 'euclidean' metric is the default and a good choice.
+Z = sch.linkage(X, method='ward')
+
+# Create a figure for the dendrogram
+plt.figure(figsize=(10, 7))
+plt.title("Hierarchical Cluster Analysis Dendrogram")
+plt.xlabel("Sample Index")
+plt.ylabel("Distance")
+
+# Create the dendrogram
+sch.dendrogram(
+    Z,
+    labels=all_labels,
+    leaf_rotation=90.,  # Rotate the leaf labels for better readability
+    leaf_font_size=10.,
+)
+
+# You can add a horizontal line to "cut" the dendrogram and
+# visually determine the clusters. A value of 't' for the fcluster function.
+# plt.axhline(y=10, c='k', linestyle='--') # Example cut-off line
+
+plt.tight_layout()
+plt.show()
+
+# To get the cluster assignments from the dendrogram, you can 'cut' it
+# at a specific distance threshold. For example, a threshold of 10.
+# You can adjust this value based on what you see in the dendrogram.
+# from scipy.cluster.hierarchy import fcluster
+# cluster_labels_hca = fcluster(Z, t=10, criterion='distance')
+# print("HCA Cluster Labels:", cluster_labels_hca)
+
+# You could also get a specific number of clusters.
+# cluster_labels_hca_3 = fcluster(Z, t=3, criterion='maxclust')
+# print("HCA Cluster Labels (3 clusters):", cluster_labels_hca_3)
