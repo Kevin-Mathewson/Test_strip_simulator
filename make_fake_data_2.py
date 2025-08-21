@@ -4,9 +4,7 @@
 # Github push DONE
 # HCA DONE
 # ASCII text for headers (KIM: ask Mark) DONE
-# 2. PCA with 3D ellipses: Think about this for next time. 
-# verify that the cluster means are right
-# populate cluster_covs
+# 2. PCA with 3D ellipses: DONE
 
 # 3. Then: 15 classes strip
 
@@ -19,7 +17,6 @@
 # We need a name for this thing. Currently it's just called "the simulator"
 
 
-
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
@@ -28,6 +25,18 @@ from matplotlib.patches import Ellipse
 from scipy.stats import chi2
 
 ################################################################################
+################################################################################
+ 
+# ██╗███╗   ██╗██╗████████╗██╗ █████╗ ██╗     ██╗███████╗███████╗
+# ██║████╗  ██║██║╚══██╔══╝██║██╔══██╗██║     ██║╚══███╔╝██╔════╝
+# ██║██╔██╗ ██║██║   ██║   ██║███████║██║     ██║  ███╔╝ █████╗  
+# ██║██║╚██╗██║██║   ██║   ██║██╔══██║██║     ██║ ███╔╝  ██╔══╝  
+# ██║██║ ╚████║██║   ██║   ██║██║  ██║███████╗██║███████╗███████╗
+# ╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚══════╝
+
+################################################################################
+################################################################################
+
 
 # =================================
 # Make table of nanoparticle colors
@@ -136,6 +145,38 @@ cov_matrices = {
 
 ################################################################################
 
+
+# ==============================
+# Narrow down to antigens in use
+# ==============================
+
+
+antigens_in_use = tuple(list(antigens))
+
+antigens_in_use_indices = {}
+for antigen in antigens_in_use:
+    antigens_in_use_indices[antigen]=antigens_in_use.index(antigen)
+
+
+
+
+################################################################################
+################################################################################
+
+
+# ███████╗ █████╗ ██╗  ██╗███████╗    ██████╗  █████╗ ████████╗ █████╗ 
+# ██╔════╝██╔══██╗██║ ██╔╝██╔════╝    ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
+# █████╗  ███████║█████╔╝ █████╗      ██║  ██║███████║   ██║   ███████║
+# ██╔══╝  ██╔══██║██╔═██╗ ██╔══╝      ██║  ██║██╔══██║   ██║   ██╔══██║
+# ██║     ██║  ██║██║  ██╗███████╗    ██████╔╝██║  ██║   ██║   ██║  ██║
+# ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
+                                                                     
+
+################################################################################
+################################################################################
+
+
+
 # ==========================
 # Math to generate fake data
 # ==========================
@@ -193,58 +234,29 @@ def strip_colors(antigen: str, add_noise: bool) -> pd.DataFrame:
         result.loc[test_line] = spot_color(antigen, test_line, affins, add_noise)
     return result
 
-################################################################################
-################################################################################
+def generate_strips(strips_per_antigen_in_use=1,add_noise = False) -> tuple[np.ndarray, list]:
+    ''' Generate strips for each antigen in use'''
+    all_data = []
+    all_labels = []
 
 
-# ███████╗ █████╗ ██╗  ██╗███████╗    ██████╗  █████╗ ████████╗ █████╗ 
-# ██╔════╝██╔══██╗██║ ██╔╝██╔════╝    ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
-# █████╗  ███████║█████╔╝ █████╗      ██║  ██║███████║   ██║   ███████║
-# ██╔══╝  ██╔══██║██╔═██╗ ██╔══╝      ██║  ██║██╔══██║   ██║   ██╔══██║
-# ██║     ██║  ██║██║  ██╗███████╗    ██████╔╝██║  ██║   ██║   ██║  ██║
-# ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
-                                                                     
+    for antigen in antigens_in_use:
+        for _ in range(strips_per_antigen_in_use):
+            strip = strip_colors(antigen, add_noise=True)
+            all_data.append(strip)
+            all_labels.append(antigen)
 
-################################################################################
-################################################################################
+    # Convert each strip to a 6D RGB vector: [D001_R, D001_G, D001_B, R007_R, R007_G, R007_B]
+    X = []
+    for strip in all_data:
+        D001_rgb = strip.loc["D001", ["R", "G", "B"]].values
+        R007_rgb = strip.loc["R007", ["R", "G", "B"]].values
+        X.append(np.concatenate([D001_rgb, R007_rgb]))
+    return (np.array(X), all_labels)
 
-
-
-
-# defining which antigens in the antigen list are actually in use (currently, all of them)
-antigens_in_use = tuple(list(antigens))
-
-antigens_in_use_nums = {}
-for antigen in antigens_in_use:
-    antigens_in_use_nums[antigen]=antigens_in_use.index(antigen)
-print(antigens_in_use_nums)
-# ChatGPT code
-
-# ========================================
-# ChatGPT code: Generate and visualize data
-# ========================================
-
-
-
-# Store flattened data and labels
-all_data = []
-all_labels = []
-
-n_samples = 100
-
-for antigen in antigens_in_use:
-    for _ in range(n_samples):
-        strip = strip_colors(antigen, add_noise=True)
-        all_data.append(strip)
-        all_labels.append(antigen)
-
-# Convert each strip to a 6D RGB vector: [D001_R, D001_G, D001_B, R007_R, R007_G, R007_B]
-X = []
-for strip in all_data:
-    D001_rgb = strip.loc["D001", ["R", "G", "B"]].values
-    R007_rgb = strip.loc["R007", ["R", "G", "B"]].values
-    X.append(np.concatenate([D001_rgb, R007_rgb]))
-X = np.array(X)
+# 'strips' is the raw colorimetric data for all generated strips (all antigens in use)
+# 'strip_labels' corresponds to strips, provides the antigen name for each entry in strips
+strips,strip_labels = generate_strips(strips_per_antigen_in_use=100, add_noise=True)
 
 
 ################################################################################
@@ -262,12 +274,16 @@ X = np.array(X)
 
 # Perform PCA to reduce from 6D to 3D
 pca = PCA(n_components=3)
-X_pca = pca.fit_transform(X)
+X_pca = pca.fit_transform(strips)
+
+
+# print data as test
+# print(X_pca)
 
 # cluster_points: break up all_data into subsets by antigen
 cluster_points = []
 for antigen in antigens_in_use:
-    mask = [label == antigen for label in all_labels]
+    mask = [label == antigen for label in strip_labels]
     cluster_points.append(X_pca[mask])
 
 
@@ -276,38 +292,79 @@ cluster_means=[]
 for cluster in cluster_points:
     mean_of_points = np.mean(cluster, axis=0)
     cluster_means.append(mean_of_points)
-print(cluster_means)
+
+
 # cluster_covs: the covariance matrices of the points in each cluster
 cluster_covs=[]
 
-# for i in range(len(X_pca)):
-#     point=list(X_pca[i])
-#     label =all_labels[i]
-#     index=antigens_in_use_nums[label]
-#     cluster_points[index].append(point)
-
-
-# # mask = [item == target_element for item in original_list]
-
-# print(cluster_points)
-#     cluster_means.append
-#     mean = mean
-
+for cluster in cluster_points:
+    cov_of_points = np.cov(cluster.T)
+    cluster_covs.append(cov_of_points)
 
 
 
 ################################################################################
 ################################################################################
 
-# ██████╗ ██╗      ██████╗ ████████╗████████╗██╗███╗   ██╗ ██████╗ 
-# ██╔══██╗██║     ██╔═══██╗╚══██╔══╝╚══██╔══╝██║████╗  ██║██╔════╝ 
-# ██████╔╝██║     ██║   ██║   ██║      ██║   ██║██╔██╗ ██║██║  ███╗
-# ██╔═══╝ ██║     ██║   ██║   ██║      ██║   ██║██║╚██╗██║██║   ██║
-# ██║     ███████╗╚██████╔╝   ██║      ██║   ██║██║ ╚████║╚██████╔╝
-# ╚═╝     ╚══════╝ ╚═════╝    ╚═╝      ╚═╝   ╚═╝╚═╝  ╚═══╝ ╚═════╝ 
-                                                               
+# ██████╗ ██╗      ██████╗ ████████╗    ██████╗  █████╗ ████████╗ █████╗ 
+# ██╔══██╗██║     ██╔═══██╗╚══██╔══╝    ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
+# ██████╔╝██║     ██║   ██║   ██║       ██║  ██║███████║   ██║   ███████║
+# ██╔═══╝ ██║     ██║   ██║   ██║       ██║  ██║██╔══██║   ██║   ██╔══██║
+# ██║     ███████╗╚██████╔╝   ██║       ██████╔╝██║  ██║   ██║   ██║  ██║
+# ╚═╝     ╚══════╝ ╚═════╝    ╚═╝       ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
+                                                                       
 ################################################################################
 ################################################################################
+
+# Ellipsoid code from https://github.com/CircusMonkey/covariance-ellipsoid/blob/master/ellipsoid.py 
+# August 2025
+
+def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=3):
+    """
+    Return the 3d points representing the covariance matrix
+    cov centred at mu and scaled by the factor nstd.
+
+    Plot on your favourite 3d axis. 
+    Example 1:  ax.plot_wireframe(X,Y,Z,alpha=0.1)
+    Example 2:  ax.plot_surface(X,Y,Z,alpha=0.1)
+    """
+    assert cov.shape==(3,3)
+
+    # Find and sort eigenvalues to correspond to the covariance matrix
+    eigvals, eigvecs = np.linalg.eigh(cov)
+    idx = np.sum(cov,axis=0).argsort()
+    eigvals_temp = eigvals[idx]
+    idx = eigvals_temp.argsort()
+    eigvals = eigvals[idx]
+    eigvecs = eigvecs[:,idx]
+
+    # Set of all spherical angles to draw our ellipsoid
+    n_points = 100
+    theta = np.linspace(0, 2*np.pi, n_points)
+    phi = np.linspace(0, np.pi, n_points)
+
+    # Width, height and depth of ellipsoid
+    rx, ry, rz = nstd * np.sqrt(eigvals)
+
+    # Get the xyz points for plotting
+    # Cartesian coordinates that correspond to the spherical angles:
+    X = rx * np.outer(np.cos(theta), np.sin(phi))
+    Y = ry * np.outer(np.sin(theta), np.sin(phi))
+    Z = rz * np.outer(np.ones_like(theta), np.cos(phi))
+
+    # Rotate ellipsoid for off axis alignment
+    old_shape = X.shape
+    # Flatten to vectorise rotation
+    X,Y,Z = X.flatten(), Y.flatten(), Z.flatten()
+    X,Y,Z = np.matmul(eigvecs, np.array([X,Y,Z]))
+    X,Y,Z = X.reshape(old_shape), Y.reshape(old_shape), Z.reshape(old_shape)
+   
+    # Add in offsets for the mean
+    X = X + mu[0]
+    Y = Y + mu[1]
+    Z = Z + mu[2]
+    
+    return X,Y,Z
 
 
 # Map antigen labels to display colors
@@ -318,27 +375,43 @@ label_colors = {
     "BA.1": "green",
 }
 
-
  # Setup the plot
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-plt.xlabel('x')
-plt.ylabel('y')
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+
+# plot data points and ellipses
 
 
+nstd = 2 # number of standard deviations of ellipsoid; determines the ellipsoid volume
 
-
+for antigen in antigens_in_use:
+    i = antigens_in_use_indices[antigen]
+    points = cluster_points[i]
+    mean = cluster_means[i]
+    cov = cluster_covs[i]
+    plot_color = label_colors[antigen]
+    X1,Y1,Z1 = get_cov_ellipsoid(cov, mean, nstd)
+    ax.plot_wireframe(X1,Y1,Z1, color=plot_color, alpha=0.1)
+    ax.scatter(points[:,0],points[:,1],points[:,2], c=plot_color)
 
 
 
 
 ################################################################################
 ################################################################################
-################################################################################
-################################################################################
-################################################################################
 
 
+# ██████╗ ██████╗ ██╗███╗   ██╗████████╗     ██████╗ ██████╗ ██╗      ██████╗ ██████╗ ███████╗
+# ██╔══██╗██╔══██╗██║████╗  ██║╚══██╔══╝    ██╔════╝██╔═══██╗██║     ██╔═══██╗██╔══██╗██╔════╝
+# ██████╔╝██████╔╝██║██╔██╗ ██║   ██║       ██║     ██║   ██║██║     ██║   ██║██████╔╝███████╗
+# ██╔═══╝ ██╔══██╗██║██║╚██╗██║   ██║       ██║     ██║   ██║██║     ██║   ██║██╔══██╗╚════██║
+# ██║     ██║  ██║██║██║ ╚████║   ██║       ╚██████╗╚██████╔╝███████╗╚██████╔╝██║  ██║███████║
+# ╚═╝     ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝   ╚═╝        ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
+
+################################################################################
+################################################################################
 
 # ChatGPT code
 
@@ -346,27 +419,8 @@ plt.ylabel('y')
 # Generate a simulated image of a strip 
 # ========================================
 
-
-
-# Store flattened data and labels
-all_data = []
-all_labels = []
-
-n_samples = 1
-
-for antigen in antigens_in_use:
-    for _ in range(n_samples):
-        strip = strip_colors(antigen, add_noise=False)
-        all_data.append(strip)
-        all_labels.append(antigen)
-
-# Convert each strip to a 6D RGB vector: [D001_R, D001_G, D001_B, R007_R, R007_G, R007_B]
-X = []
-for strip in all_data:
-    D001_rgb = strip.loc["D001", ["R", "G", "B"]].values
-    R007_rgb = strip.loc["R007", ["R", "G", "B"]].values
-    X.append(np.concatenate([D001_rgb, R007_rgb]))
-#X = np.array(X)
+strips, strip_labels=generate_strips()
+strips = list(strips)
 
 
 column_names = []
@@ -380,18 +434,30 @@ for test_line in test_lines:
 #row_names_classes = ("Control", "alpha", "BA.5", "BA.1")
 
 
-X = pd.DataFrame(
-    X, 
+strips = pd.DataFrame(
+    strips, 
     index = antigens_in_use, 
     columns = column_names,)
 
-print(X)
-
-######################$
+print(strips)
 
 
 
-# ... (your existing code for generating X and all_labels) ...
+
+################################################################################
+################################################################################
+
+
+# ██████╗ ██╗      ██████╗ ████████╗    ██╗  ██╗ ██████╗ █████╗ 
+# ██╔══██╗██║     ██╔═══██╗╚══██╔══╝    ██║  ██║██╔════╝██╔══██╗
+# ██████╔╝██║     ██║   ██║   ██║       ███████║██║     ███████║
+# ██╔═══╝ ██║     ██║   ██║   ██║       ██╔══██║██║     ██╔══██║
+# ██║     ███████╗╚██████╔╝   ██║       ██║  ██║╚██████╗██║  ██║
+# ╚═╝     ╚══════╝ ╚═════╝    ╚═╝       ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+
+################################################################################
+################################################################################
+
 
 ################################################################################
 # New HCA code block: from GEMINI
@@ -402,7 +468,7 @@ import scipy.cluster.hierarchy as sch
 # Perform hierarchical clustering on the same 6D data (X)
 # We use the 'ward' method, which is good for minimizing the variance
 # within each cluster, and 'euclidean' metric is the default and a good choice.
-Z = sch.linkage(X, method='ward')
+Z = sch.linkage(strips, method='ward')
 
 # Create a figure for the dendrogram
 plt.figure(figsize=(10, 7))
@@ -413,7 +479,7 @@ plt.ylabel("Distance")
 # Create the dendrogram
 sch.dendrogram(
     Z,
-    labels=all_labels,
+    labels=strip_labels,
     leaf_rotation=90.,  # Rotate the leaf labels for better readability
     leaf_font_size=10.,
 )
