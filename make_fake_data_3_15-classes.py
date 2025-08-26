@@ -28,10 +28,13 @@
 # changed how colors for plotting (random hexadecimal) so can extend to 15 classes
 # obtained direct test data for 15 classes as stand-in for Ab binding profiles, made educated guesses for missing numbers
 # started changing immunoprobe colors and binding affinities, midway through. Code currently broken
-# Things to fix: importing the Ab binding profiles, and getting the row names (i.e., the antigens) Line 89
-# Still to do: have the RGB values of the 3 immunoprobes from JMC in excel file, need to define the immunoprobe colors
+# Things to fix: importing the Ab binding profiles, and getting the row names (i.e., the antigens) Line 89 DONE
+# Still to do: have the RGB values of the 3 immunoprobes from JMC in excel file, need to define the immunoprobe colors DONE
 
-
+# Where we are at T 8/26/2025:
+# Added variances (all the same)
+# We are fixing generate_strips to have 5 spots, 3 IPs: will build in an iterative loop so generalizable to any number of spots/IPs/colors
+# Need to do next: Line 258. For loop? or something different 
 
 
 
@@ -64,48 +67,30 @@ import random
 
 color_channels = ("R", "G", "B",)
 NP_names = ("Innova", "Red", "Blue")
-# NP_colors = [
-# #  Innova     Red    Blue
-#     [122.15, 50.39, ],  # R
-#     [119.85, 67.67, ],  # G
-#     [110.61, 53.24, ],] # B
+NP_colors = [
+#  Innova     Red    Blue
+    [194.27, 178.77, 136.57, ],  # R
+    [129.16, 127.22, 155.11, ],  # G
+    [161.40, 154.64, 166.40, ],] # B
 
 
-# NP_colors = pd.DataFrame(
-#     NP_colors, 
-#     index = color_channels, 
-#     columns = NP_names,)
+NP_colors = pd.DataFrame(
+    NP_colors, 
+    index = color_channels, 
+    columns = NP_names,)
 
 ################################################################################
 
 # ==========================================
 # Make table of idealized binding affinities
 # ==========================================
-# antibody binding profiles are 5 columns X 15 rows
+# antibody binding profiles are 5 columns X 15 rows. mean_affinities
 
 xls = pd.ExcelFile('15-class_Ab_binding_profiles.xlsx')
-df1 = pd.read_excel(xls, 'Ab_profiles_08222025')
-print("hello")
-print((df1.columns.tolist()[1:]))
-print((df1.index.tolist()[1:]))
-print("goodbye")
+mean_affinities = pd.read_excel(xls, 'Ab_profiles_08222025',index_col=[0],)
+antibodies = tuple(mean_affinities.columns.tolist()) #getting antibodies (column names)
+antigens = tuple(mean_affinities.index) #this might be a hacky way to get the antigens
 
-
-antigens = ("Control", "Alpha", "BA.5", "BA.1",)
-antibodies = (list(df1.head(5))[1:])
-
-
-mean_affinities = [
-#   D001  R007
-    [0.0, 0.0],  # Control
-    [0.6, 0.7],  # Alpha
-    [0.0, 0.4],  # BA.5
-    [0.0, 1.0],] # BA.1
-
-mean_affinities = pd.DataFrame(
-    mean_affinities, 
-    index = antigens, 
-    columns = antibodies,)
 
 ################################################################################
 
@@ -133,8 +118,8 @@ interferences = {
 # Define test lines and immunoprobes
 # ==================================
 
-test_lines = ("D001", "R007",)
-immunoprobe_NPs = {"D001": "Red", "R007": "Blue",}
+test_lines = antibodies
+immunoprobe_NPs = {"Dengue SinoBio": "Red", "Dengue CTK": "Blue", "Powassan": "Innova"}
 immunoprobes = immunoprobe_NPs.keys()
 
 # sanity checks
@@ -148,18 +133,14 @@ for probe in immunoprobes:
 ################################################################################
 
 
-
-
 # ====================================================
 # Define distribution of noise about each cluster mean 
 # ====================================================
 
 # define target variance for each antigen
-variances = {
-    "Control": 0.001, 
-    "Alpha": 0.001,
-    "BA.5": 0.001,
-    "BA.1": 0.001,}
+variances ={}
+for antigen in antigens:
+    variances[antigen]=0.001
 
 # TODO write comment
 noise_scaling_spot = 0.5
@@ -272,10 +253,13 @@ def generate_strips(strips_per_antigen_in_use=1,add_noise = False) -> tuple[np.n
             strip = strip_colors(antigen, add_noise=True)
             all_data.append(strip)
             all_labels.append(antigen)
-
-    # Convert each strip to a 6D RGB vector: [D001_R, D001_G, D001_B, R007_R, R007_G, R007_B]
+    print('hello')
+    print(all_data[0])
+   
+    # Convert each strip to a 15D RGB vector: [D001_R, D001_G, D001_B, R007_R, R007_G, R007_B]
     X = []
     for strip in all_data:
+        #for spot in 
         D001_rgb = strip.loc["D001", ["R", "G", "B"]].values
         R007_rgb = strip.loc["R007", ["R", "G", "B"]].values
         X.append(np.concatenate([D001_rgb, R007_rgb]))
