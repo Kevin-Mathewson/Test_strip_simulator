@@ -36,6 +36,10 @@
 # We are fixing generate_strips to have 5 spots, 3 IPs: will build in an iterative loop so generalizable to any number of spots/IPs/colors
 # Need to do next: Line 258. For loop? or something different 
 
+# Where we are at F 9/05/2025:
+# still on second loop of generate_strips
+# starting point of loop: all_data is a list of pandas tables, each of which represents a strip
+# ending point of loop: each table becomes a single long row in a new numpy 2D array called X
 
 
 
@@ -234,7 +238,7 @@ def spot_color(
     return color
 
 def strip_colors(antigen: str, add_noise: bool) -> pd.DataFrame:
-    '''Generate a full-strip dataset of all the spot colors'''
+    '''Generates a complete test strip for the given antigen with the RGB values for each test line'''
     affins = mean_affinities
     if add_noise: affins = add_noise_to_affins(antigen, affins)
     result = pd.DataFrame(index = test_lines, columns = color_channels, dtype=float,)
@@ -243,23 +247,30 @@ def strip_colors(antigen: str, add_noise: bool) -> pd.DataFrame:
     return result
 
 def generate_strips(strips_per_antigen_in_use=1,add_noise = False) -> tuple[np.ndarray, list]:
-    ''' Generate strips for each antigen in use'''
+    ''' Generate N strips for each antigen in use'''
     all_data = []
     all_labels = []
 
 
     for antigen in antigens_in_use:
         for _ in range(strips_per_antigen_in_use):
-            strip = strip_colors(antigen, add_noise=True)
+            strip = strip_colors(antigen, add_noise=add_noise)
             all_data.append(strip)
             all_labels.append(antigen)
     print('hello')
     print(all_data[0])
-   
-    # Convert each strip to a 15D RGB vector: [D001_R, D001_G, D001_B, R007_R, R007_G, R007_B]
+    print(type(all_data[0]))
+
+    # Convert each strip to a RGB vector
     X = []
     for strip in all_data:
-        #for spot in 
+        entry = []
+        for test_line in test_lines:
+            spot=strip.loc[test_line, ["R", "G", "B"]].values
+            print(spot)
+            rgb=spot.loc
+            # we stopped here 09052025
+
         D001_rgb = strip.loc["D001", ["R", "G", "B"]].values
         R007_rgb = strip.loc["R007", ["R", "G", "B"]].values
         X.append(np.concatenate([D001_rgb, R007_rgb]))
